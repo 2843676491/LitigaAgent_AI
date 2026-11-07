@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LegalCourt AI · 合同争议模拟庭审</title>
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="seal">判</span>
+    <div class="brand-text">
+      <h1>LegalCourt AI</h1>
+      <p>合同争议模拟庭审多 Agent 推演</p>
+    </div>
+  </div>
+  <div class="meta" id="envMeta">
+    <span class="chip" id="chipLLM">模型 · —</span>
+    <span class="chip" id="chipIndex">索引 · —</span>
+    <span class="chip" id="chipThr">复核阈值 · —</span>
+  </div>
+  <div class="who">
+    <label for="roleSel">身份</label>
+    <select id="roleSel">
+      <option value="lawyer">法务（发起/推演）</option>
+      <option value="reviewer">复核人（签署/驳回）</option>
+      <option value="auditor">审计（只读）</option>
+    </select>
+    <input id="userInput" value="alice" aria-label="用户名" />
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="panel composer">
+    <div class="panel-head">
+      <span class="eyebrow">新建推演</span>
+      <span class="hint">示例或自有材料</span>
+    </div>
+
+    <label class="field">
+      <span>载入示例</span>
+      <select id="sampleSel">
+        <option value="">— 选择示例场景 —</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>案件标题</span>
+      <input id="titleInput" placeholder="如：设备采购合同逾期交付争议" />
+    </label>
+
+    <label class="field">
+      <span>争议事实 <em>必填</em></span>
+      <textarea id="factsInput" rows="8" placeholder="谁、何时、签了什么、发生了什么、双方各主张什么、现有证据有哪些…"></textarea>
+    </label>
+
+    <label class="field">
+      <span>合同全文 <em>可空</em></span>
+      <textarea id="contractInput" rows="9" placeholder="按“第X条 …”分行粘贴；留空则按“无书面合同”处理"></textarea>
+    </label>
+
+    <div class="row">
+      <label class="field small">
+        <span>最大轮次</span>
+        <input id="roundsInput" type="number" min="1" max="5" value="3" />
+      </label>
+      <label class="check">
+        <input id="autoReview" type="checkbox" />
+        <span>自动复核（演示跳过 HITL）</span>
+      </label>
+    </div>
+
+    <button id="runBtn" class="primary">开始模拟庭审</button>
+    <p class="tip">推演过程逐节点流式返回；命中复核条件时暂停，等待人工签署。</p>
+  </aside>
+
+  <section class="stage">
+    <div class="stage-head">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="timeline" role="tab">庭审时间线</button>
+        <button class="tab" data-tab="opinion" role="tab">法律意见书</button>
+        <button class="tab" data-tab="audit" role="tab">审计链</button>
+      </div>
+      <div class="run-state" id="runState"><span class="dot idle"></span>未开始</div>
+    </div>
+
+    <div class="pane active" id="pane-timeline">
+      <div class="empty" id="timelineEmpty">
+        <p class="empty-title">法庭尚未开庭</p>
+        <p>左侧载入示例或粘贴材料，点击「开始模拟庭审」，即可看到原告举证、被告质证、法官裁决的逐节点过程。</p>
+      </div>
+      <ol class="timeline" id="timeline"></ol>
+    </div>
+
+    <div class="pane" id="pane-opinion">
+      <div class="empty"><p class="empty-title">意见书尚未生成</p><p>推演结束（或复核签署）后，这里会输出结构化法律意见书。</p></div>
+      <div id="opinionBody"></div>
+    </div>
+
+    <div class="pane" id="pane-audit">
+      <div class="audit-bar">
+        <button id="auditLoad" class="ghost">加载审计记录</button>
+        <button id="auditVerify" class="ghost">校验哈希链</button>
+        <span id="auditResult" class="audit-result"></span>
+      </div>
+      <table class="audit-table" id="auditTable">
+        <thead><tr><th>时间</th><th>动作</th><th>操作者</th><th>对象</th><th>哈希</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <section class="hitl" id="hitlPanel" hidden>
+      <div class="hitl-head">
+        <span class="eyebrow alert">人工复核闸门</span>
+        <span class="chip warn" id="hitlTriggers"></span>
+      </div>
+      <div class="hitl-summary" id="hitlSummary"></div>
+      <div class="hitl-actions">
+        <label class="field small"><span>复核人</span><input id="reviewerInput" value="张复核" /></label>
+        <label class="field grow"><span>复核意见 <em>驳回必填</em></span>
+          <textarea id="reviewComment" rows="2" placeholder="例：违约金调减依据不足，补充实际损失凭证后重跑"></textarea>
+        </label>
+      </div>
+      <div class="hitl-buttons">
+        <button id="approveBtn" class="primary">签署通过</button>
+        <button id="rejectBtn" class="danger">驳回重审</button>
+      </div>
+    </section>
+  </section>
+
+  <aside class="drawer" id="drawer" hidden>
+    <div class="drawer-head">
+      <span class="eyebrow">证据溯源</span>
+      <button class="icon" id="drawerClose" aria-label="关闭">×</button>
+    </div>
+    <div id="drawerBody"></div>
+  </aside>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+<script src="./app.js"></script>
+</body>
+</html>

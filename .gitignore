@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# 运行产物
+data/runtime/
+data/index/
+data/index_eval/
+*.db
+*.db-wal
+*.db-shm
+*.log
+.env
+
+# 系统
+.DS_Store
+Thumbs.db

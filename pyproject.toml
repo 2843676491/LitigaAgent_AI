@@ -1,0 +1,14 @@
+[project]
+name = "legalcourt-ai"
+version = "1.0.0"
+description = "合同争议模拟庭审多 Agent 推演系统"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

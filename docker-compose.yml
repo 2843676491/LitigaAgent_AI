@@ -1,0 +1,40 @@
+# 生产可选编排模板 —— 当前开发环境没有 Docker，此文件未实测，仅作交付参考。
+# 单机直接跑：make install && make dev
+#
+# 生产切换向量库：把 MILVUS_URI 指向下面的 milvus 服务即可，业务代码零改动。
+# milvus standalone 依赖 etcd + minio，完整栈较重，按需启用 profile "vector"。
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=prod
+      - LLM_PROVIDER=${LLM_PROVIDER:-mock}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - AUDIT_SECRET=${AUDIT_SECRET:-change-me-in-prod}
+      - MILVUS_URI=${MILVUS_URI:-}
+    volumes:
+      - ./data/runtime:/app/data/runtime
+      - ./data/index:/app/data/index
+    restart: unless-stopped
+
+  # 可选：向量库。启用后设置 MILVUS_URI=http://milvus:19530 并重启 app。
+  milvus:
+    image: milvusdb/milvus:v2.4.9
+    profiles: ["vector"]
+    command: ["milvus", "run", "standalone"]
+    environment:
+      - ETCD_USE_EMBED=true
+      - ETCD_DATA_DIR=/var/lib/milvus/etcd
+      - COMMON_STORAGETYPE=local
+    ports:
+      - "19530:19530"
+    volumes:
+      - milvus_data:/var/lib/milvus
+
+volumes:
+  milvus_data:
